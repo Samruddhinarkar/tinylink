@@ -1,142 +1,106 @@
-const db = require("../config/db");   // your MySQL connection
 const crypto = require("crypto");
+const Link = require("./models/links");
 
-const error422 = (message, res) => {
-    return res.status(422).json({
-        status: 422,
-        message: message
-    })
-}
-const error500 = (error, res )=>{
-    console.log(error);
-    
-    return res.status(500).json({
-        status:500,
-        message:"Internal Server Error",
-        error:error
-    })
-}
-
-// Generate short code
-const generateCode = (length = 6) => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-
-    let result = '';
-    const randomBytes = crypto.randomBytes(length);
+// Generate alphanumeric code (6-8 chars)
+const generateCode = () => {
+    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const length = Math.floor(Math.random() * 3) + 6; // 6,7,8
+    let code = "";
+    const bytes = crypto.randomBytes(length);
 
     for (let i = 0; i < length; i++) {
-        result += characters[randomBytes[i] % charactersLength];
+        code += charset[bytes[i] % charset.length];
     }
-
-    return result;
+    return code;
 };
 
-const generateCodeWithLength = () => {
-    const length = Math.floor(Math.random() * 3) + 6; // generates 6,7,8
-    return generateCode(length);
-};
+// CREATE SHORT URL
+// exports.createShortUrl = async (req, res) => {
+//     try {
+//         const { original_url, code } = req.body;
+//         if (!original_url) {
+//             return res.status(400).json({ message: "Original URL is required" });
+//         }
 
+//         let finalCode = code || generateCode();
 
-// ===============================
-// CREATE Short URL
-// ===============================
+//         const exists = await Link.findOne({ code: finalCode });
+//         if (exists) {
+//             return res.status(422).json({ message: "Code already exists" });
+//         }
+
+//         const newLink = await Link.create({
+//             code: finalCode,
+//             original_url
+//         });
+
+//         return res.status(201).json({
+//             message: "Short URL created",
+//             short_url: `${req.protocol}://${req.get("host")}/${finalCode}`,
+//             data: newLink
+//         });
+
+//     } catch (error) {
+//         return res.status(500).json({ message: error.message });
+//     }
+// };
+
+// Create Short URL
 exports.createShortUrl = async (req, res) => {
-    const { original_url, code } = req.body;
+  try {
+    const { original_url } = req.body;
+    const code = Math.random().toString(36).substring(2, 8);
 
-    if (!original_url) {
-        return res.status(400).json({ message: "Original URL is required" });
-    }
+    const newLink = new Link({
+      code,
+      original_url,
+      clicks: 0,
+      created_at: new Date(),
+      last_clicked: null
+    });
 
-    // If user provided a custom code use it, else generate one
-    let usercode = code || generateCodeWithLength();
-
-    try {
-        // Ensure code is unique
-        const checkQuery = "SELECT id FROM links WHERE code = ?";
-        const [rows] = await db.query(checkQuery, [usercode]);
-
-        if (rows.length > 0) {
-            // Code exists → generate new one
-            // usercode = generateCode();
-
-            return error422("Code is already exist",res);
-        }
-
-        const query1 = `
-            INSERT INTO links (code, original_url)
-            VALUES (?, ?)
-        `;
-
-        await db.query(query1, [usercode, original_url]);
-
-        return res.status(201).json({
-            message: "Short URL created",
-            short_url: `${req.protocol}://${req.get("host")}/${usercode}`, // corrected URL
-            usercode,
-            original_url,
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: error.message || "Something went wrong",
-        });
-    }
+    await newLink.save();
+    res.status(201).json({ message: "Short URL created", data: newLink });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-
-
-// ===============================
-// REDIRECT + COUNT CLICK
-// ===============================
+// REDIRECT & COUNT
 exports.redirectUrl = async (req, res) => {
-    const { code } = req.params;
     try {
-        const query = `SELECT * FROM links WHERE code = ?`;
-        const results = await db.query(query, [code])
-        //   
-        const urlData = results[0];
-        if (urlData.length === 0) {
+        const link = await Link.findOne({ code: req.params.code });
+
+        if (!link) {
             return res.status(404).json({ message: "Short link not found" });
         }
 
+        link.clicks += 1;
+        link.last_clicked = new Date();
+        await link.save();
 
-        // update click count + last clicked time
-        const updateQuery = `
-        UPDATE links
-        SET clicks = clicks + 1, last_clicked = NOW()
-        WHERE code = ?
-      `;
+        return res.redirect(link.original_url);
 
-        db.query(updateQuery, [code]);
-        // return res.status(200).json(urlData);
-        return res.redirect(urlData[0].original_url);
     } catch (error) {
-        return res.status(500).json(error);
+        return res.status(500).json({ message: error.message });
     }
 };
 
+// GET ALL LINKS
 exports.getAllLinks = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        const offset = (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
-        const countQuery = `SELECT COUNT(*) AS total FROM links`;
-        const [countResult] = await db.query(countQuery);
-        const total = countResult[0].total;
+        const total = await Link.countDocuments();
+        const links = await Link.find()
+            .sort({ created_at: -1 })
+            .skip(skip)
+            .limit(limit);
 
-        const query = `SELECT * FROM links ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-        const results = await db.query(query, [limit, offset]);
-
-        const urlData = results[0];
-
-        if (urlData.length === 0) {
-            return res.status(404).json({ message: "link not found" });
-        }
-
-        return res.status(200).json({
-            data: urlData,
+        res.status(200).json({
+            data: links,
             pagination: {
                 totalItems: total,
                 currentPage: page,
@@ -146,55 +110,34 @@ exports.getAllLinks = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(500).json(error);
+        return res.status(500).json({ message: error.message });
     }
 };
 
-// ===============================
-// GET SINGLE URL BY ID
-// ===============================
+// GET SINGLE
 exports.getLinkById = async (req, res) => {
-    const Linkcode = parseInt(req.params.code)
     try {
-        let getLinkQuery = "SELECT * FROM links WHERE code=?"
-       
-        const getLinkResult = await db.query(getLinkQuery, [Linkcode])
-        if (!getLinkResult[0][0]) {
-            return res.status(404).json({
-                status: 404,
-                message: 'No Record found'
-
-            })
+        const link = await Link.findOne({ code: req.params.code });
+        if (!link) {
+            return res.status(404).json({ message: "No Record Found" });
         }
-        let data = getLinkResult[0][0]
-        return res.status(200).json({
-            status: 200,
-            message: "Category retrived successfully",
-            data:data
-        })
+        res.status(200).json({ data: link });
+
     } catch (error) {
-        return error500(error, res)
+        return res.status(500).json({ message: error.message });
     }
 };
 
-exports.deleteLink = async (req, res)=>{
-    const Link_code = parseInt(req.params.code);
-    //is category exist
-    let isLinkExistQuery = "SELECT * FROM  links WHERE  code = ?";
-    let isLinkExistResult = await db.query(isLinkExistQuery,[Link_code]);
-    if (isLinkExistResult[0]==0) {
-        return error422("Link Not Found", res);  
-    }
+// DELETE
+exports.deleteLink = async (req, res) => {
     try {
-        //delete category
-        let deleteListQuery = "DELETE FROM links WHERE code = ?"
-        await db.query(deleteListQuery,[Link_code])
-        return res.status(200).json({
-            status:200,
-            message:"links deleted successfully"
-        })
-        
+        const deleted = await Link.findOneAndDelete({ code: req.params.code });
+        if (!deleted) {
+            return res.status(404).json({ message: "Link Not Found" });
+        }
+        res.status(200).json({ message: "Link deleted successfully" });
+
     } catch (error) {
-       return error500(error, res); 
+        return res.status(500).json({ message: error.message });
     }
-}
+};
