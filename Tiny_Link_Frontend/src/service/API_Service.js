@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8080", // change your backend URL here
+  baseURL: "https://tinylinkbackend.vercel.app/", // change your backend URL here
 });
 
 // Create link
