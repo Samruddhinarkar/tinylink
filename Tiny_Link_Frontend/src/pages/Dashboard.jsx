@@ -1,8 +1,8 @@
 // LinkList.jsx
 import React, { useEffect, useState } from "react";
-import { getLinks,deleteLink } from "../service/API_Service";
+import { getLinks, deleteLink } from "../service/API_Service";
 import { useNavigate } from "react-router-dom";
-import LinkForm from "../components/LinkForm";  // ⬅ Make sure this path is correct
+import LinkForm from "../components/LinkForm"; // ⬅ Make sure this path is correct
 import toast from "react-hot-toast";
 export default function LinkList() {
   const [links, setLinks] = useState([]);
@@ -34,52 +34,50 @@ export default function LinkList() {
     alert("Copied!");
   };
 
-const handleDelete = async (code) => {
-  toast(
-    (t) => (
-      <div className="flex flex-col gap-3">
-        <p className="font-medium text-gray-800">Delete this link?</p>
+  const handleDelete = async (code) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="font-medium text-gray-800">Delete this link?</p>
 
-        <div className="flex gap-3 justify-end">
-          {/* Cancel */}
-          <button
-            onClick={() => toast.dismiss(t.code)}
-            className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
-          >
-            Cancel
-          </button>
+          <div className="flex gap-3 justify-end">
+            {/* Cancel */}
+            <button
+              onClick={() => toast.dismiss(t.code)}
+              className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
+            >
+              Cancel
+            </button>
 
-          {/* Confirm Delete */}
-          <button
-            onClick={async () => {
-              toast.dismiss(t.code);
-              try {
-                await deleteLink(code);
-                toast.success("Link deleted successfully!");
-                fetchLinks();
-              } catch (err) {
-                console.error(err);
-                toast.error("Failed to delete link");
-              }
-            }}
-            className="px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white"
-          >
-            Delete
-          </button>
+            {/* Confirm Delete */}
+            <button
+              onClick={async () => {
+                toast.dismiss(t.code);
+                try {
+                  await deleteLink(code);
+                  toast.success("Link deleted successfully!");
+                  fetchLinks();
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Failed to delete link");
+                }
+              }}
+              className="px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete
+            </button>
+          </div>
         </div>
-      </div>
-    ),
-    {
-      duration: 5000,
-      position: "top-center",
-    }
-  );
-};
-
+      ),
+      {
+        duration: 5000,
+        position: "top-center",
+      }
+    );
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-
       {/* HEADER */}
       <div className="flex justify-end items-center mb-6">
         <button
@@ -92,13 +90,9 @@ const handleDelete = async (code) => {
 
       {/* SHOW POPUP FORM */}
       {showForm && (
-        <LinkForm
-          refresh={fetchLinks}
-          onClose={() => setShowForm(false)}
-        />
+        <LinkForm refresh={fetchLinks} onClose={() => setShowForm(false)} />
       )}
 
-      {/* TABLE */}
       <div className="overflow-x-auto bg-white p-5 rounded-2xl shadow-xl">
         <table className="min-w-full">
           <thead>
@@ -166,7 +160,7 @@ const handleDelete = async (code) => {
                 >
                   No records found.
                 </td>
-                </tr>
+              </tr>
             )}
           </tbody>
         </table>
@@ -174,7 +168,6 @@ const handleDelete = async (code) => {
 
       {/* PAGINATION */}
       <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-5">
-
         {/* ITEMS PER PAGE */}
         <div className="flex items-center gap-3">
           <label className="font-medium text-gray-700 text-lg">
@@ -199,7 +192,6 @@ const handleDelete = async (code) => {
 
         {/* PREVIOUS – PAGE – NEXT */}
         <div className="flex justify-center items-center gap-4">
-
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
@@ -228,7 +220,6 @@ const handleDelete = async (code) => {
             Next ⟶
           </button>
         </div>
-
       </div>
     </div>
   );

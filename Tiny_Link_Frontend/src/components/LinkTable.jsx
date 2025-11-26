@@ -54,16 +54,10 @@ export default function LinkTable({ links = [], refresh, onAddClick }) {
 
             <tbody className="divide-y divide-gray-200">
               {links.map((link) => (
-                <tr
-                  key={link.code}
-                  className="hover:bg-gray-50 transition-all"
-                >
+                <tr key={link.code} className="hover:bg-gray-50 transition-all">
                   {/* Code */}
                   <td className="p-3 font-medium text-indigo-600">
-                    <Link
-                      to={`/code/${link.code}`}
-                      className="hover:underline"
-                    >
+                    <Link to={`/code/${link.code}`} className="hover:underline">
                       {link.code}
                     </Link>
                   </td>
@@ -80,7 +74,6 @@ export default function LinkTable({ links = [], refresh, onAddClick }) {
 
                   {/* Actions */}
                   <td className="p-3 text-center space-x-2">
-
                     {/* Copy Button */}
                     <button
                       onClick={() => copyLink(link.code)}
@@ -96,7 +89,6 @@ export default function LinkTable({ links = [], refresh, onAddClick }) {
                     >
                       Delete
                     </button>
-
                   </td>
                 </tr>
               ))}
