@@ -4,9 +4,8 @@ import React from "react";
 
 export default function RedirectPage() {
   const { code } = useParams();
-
   useEffect(() => {
-    window.location.href = `/${code}`; // backend will handle 302
+    window.location.href = `/${code}`;
   }, [code]);
 
   return <div className="p-6">Redirecting...</div>;

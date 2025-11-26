@@ -35,10 +35,8 @@ export default function LinkForm({ refresh, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fadeIn">
-
       {/* Modal Box */}
       <div className="max-w-lg w-full bg-white p-8 rounded-2xl shadow-2xl border border-gray-200 relative">
-
         {/* Close Button */}
         <button
           onClick={onClose}

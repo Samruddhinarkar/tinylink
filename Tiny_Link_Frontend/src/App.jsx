@@ -55,7 +55,6 @@ export default function App() {
           },
         }}
       />
-
       <BrowserRouter>
         <Routes>
           {/* Dashboard */}
