@@ -68,7 +68,7 @@ export default function ViewLink() {
           <button
             onClick={() => {
               try {
-                const shortUrl = `https://tinylink-sandy-nine.vercel.app/api/${link.code}`;
+                const shortUrl = `https://tinylinkbackend.vercel.app/api/${link.code}`;
                 window.open(shortUrl, "_blank");
               } catch (error) {
                 console.error("Redirect failed:", error);
